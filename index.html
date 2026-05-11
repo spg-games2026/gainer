@@ -1,49 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>60kg Goal Tracker</title>
+    <title>Gainer 60kg | Dashboard</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
-        .card { background: #1e1e1e; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
-        h2 { color: #00ff88; margin: 0 0 10px 0; }
-        input, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 5px; border: none; font-size: 16px; }
-        input { background: #333; color: white; }
-        button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
-        .log-entry { font-size: 14px; border-bottom: 1px solid #333; padding: 8px 0; display: flex; justify-content: space-between; }
+        :root { --accent: #00ff88; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .container { max-width: 500px; margin: auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: var(--accent); font-size: 1.5rem; }
+        .card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .progress-bar { background: #334155; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
+        #fill { background: var(--accent); height: 100%; transition: width 0.5s ease; }
+        
+        h3 { margin-top: 0; font-size: 1.1rem; border-left: 4px solid var(--accent); padding-left: 10px; }
+        label { display: block; font-size: 0.8rem; margin: 10px 0 5px; opacity: 0.8; }
+        input, textarea, select { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; background: var(--accent); color: #0f172a; border: none; padding: 14px; border-radius: 8px; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        
+        .history-item { background: #334155; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem; }
+        .tag { color: var(--accent); font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Target: 60kg</h2>
-        <p>Current: <span id="curWeight">55.5</span>kg | Left: <span id="remWeight">4.5</span>kg</p>
-        <input type="number" id="weight" step="0.1" placeholder="Current Weight (kg)">
-        <input type="number" id="cals" placeholder="Today's Calories">
-        <button onclick="addLog()">Log Today</button>
+
+<div class="container">
+    <div class="header">
+        <h1>60kg Mission</h1>
+        <p>Current: <span id="cur">55.5</span>kg | Target: 60kg</p>
+        <div class="progress-bar"><div id="fill" style="width: 0%"></div></div>
     </div>
+
     <div class="card">
-        <h3>History</h3>
-        <div id="history"></div>
+        <h3>Nutrition Log</h3>
+        <label>Total Calories Today</label>
+        <input type="number" id="calInput" placeholder="e.g. 2500">
+        <label>Meal Breakdown (Foods eaten)</label>
+        <textarea id="mealInput" rows="2" placeholder="Breakfast: Oats, Lunch: Rice..."></textarea>
     </div>
-    <script>
-        function updateDisplay() {
-            let logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-            let last = logs.length > 0 ? logs[0].w : 55.5;
-            document.getElementById('curWeight').innerText = last;
-            document.getElementById('remWeight').innerText = (60 - last).toFixed(1);
-            let h = document.getElementById('history');
-            h.innerHTML = logs.map(l => `<div class="log-entry"><span>${l.d}</span> <span>${l.w}kg</span> <span>${l.c} kcal</span></div>`).join('');
-        }
-        function addLog() {
-            let w = document.getElementById('weight').value;
-            let c = document.getElementById('cals').value;
-            if(!w || !c) return alert("Fill both!");
-            let logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
-            logs.unshift({d: new Date().toLocaleDateString(), w: w, c: c});
-            localStorage.setItem('myLogs', JSON.stringify(logs));
-            updateDisplay();
-        }
-        updateDisplay();
-    </script>
+
+    <div class="card">
+        <h3>Workout & Weight</h3>
+        <label>Today's Weight (kg)</label>
+        <input type="number" id="weightInput" step="0.1" placeholder="55.5">
+        <label>Exercise Detail</label>
+        <textarea id="workInput" rows="2" placeholder="Squats 3x12, Pushups 3x15..."></textarea>
+        <button onclick="saveLog()">Save Daily Entry</button>
+    </div>
+
+    <div id="historySection"></div>
+</div>
+
+<script>
+    const GOAL = 60;
+    const START = 55.5;
+
+    function saveLog() {
+        const entry = {
+            date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+            weight: document.getElementById('weightInput').value || 55.5,
+            cals: document.getElementById('calInput').value || 0,
+            meals: document.getElementById('mealInput').value || 'No meal data',
+            work: document.getElementById('workInput').value || 'Rest Day'
+        };
+
+        let logs = JSON.parse(localStorage.getItem('gainer_data') || '[]');
+        logs.unshift(entry);
+        localStorage.setItem('gainer_data', JSON.stringify(logs));
+        render();
+    }
+
+    function render() {
+        let logs = JSON.parse(localStorage.getItem('gainer_data') || '[]');
+        const lastWeight = logs.length > 0 ? parseFloat(logs[0].weight) : START;
+        
+        document.getElementById('cur').innerText = lastWeight;
+        const progress = ((lastWeight - START) / (GOAL - START)) * 100;
+        document.getElementById('fill').style.width = Math.max(0, Math.min(100, progress)) + "%";
+
+        const hist = document.getElementById('historySection');
+        hist.innerHTML = '<h3>Recent Logs</h3>';
+        logs.forEach(l => {
+            hist.innerHTML += `
+                <div class="history-item">
+                    <strong>${l.date}</strong> — <span class="tag">${l.weight}kg</span><br>
+                    <small>🔥 ${l.cals} kcal | 🍽️ ${l.meals}</small><br>
+                    <small>💪 ${l.work}</small>
+                </div>`;
+        });
+    }
+    render();
+</script>
+
 </body>
 </html>
