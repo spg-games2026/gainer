@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>60kg Goal Tracker</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
+        h2 { color: #00ff88; margin: 0 0 10px 0; }
+        input, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 5px; border: none; font-size: 16px; }
+        input { background: #333; color: white; }
+        button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
+        .log-entry { font-size: 14px; border-bottom: 1px solid #333; padding: 8px 0; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Target: 60kg</h2>
+        <p>Current: <span id="curWeight">55.5</span>kg | Left: <span id="remWeight">4.5</span>kg</p>
+        <input type="number" id="weight" step="0.1" placeholder="Current Weight (kg)">
+        <input type="number" id="cals" placeholder="Today's Calories">
+        <button onclick="addLog()">Log Today</button>
+    </div>
+    <div class="card">
+        <h3>History</h3>
+        <div id="history"></div>
+    </div>
+    <script>
+        function updateDisplay() {
+            let logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+            let last = logs.length > 0 ? logs[0].w : 55.5;
+            document.getElementById('curWeight').innerText = last;
+            document.getElementById('remWeight').innerText = (60 - last).toFixed(1);
+            let h = document.getElementById('history');
+            h.innerHTML = logs.map(l => `<div class="log-entry"><span>${l.d}</span> <span>${l.w}kg</span> <span>${l.c} kcal</span></div>`).join('');
+        }
+        function addLog() {
+            let w = document.getElementById('weight').value;
+            let c = document.getElementById('cals').value;
+            if(!w || !c) return alert("Fill both!");
+            let logs = JSON.parse(localStorage.getItem('myLogs') || '[]');
+            logs.unshift({d: new Date().toLocaleDateString(), w: w, c: c});
+            localStorage.setItem('myLogs', JSON.stringify(logs));
+            updateDisplay();
+        }
+        updateDisplay();
+    </script>
+</body>
+</html>
